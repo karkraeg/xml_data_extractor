@@ -145,6 +145,11 @@ class XMLExtractor:
             if filter_config:
                 values = self._apply_filter(values, filter_config)
 
+            # Apply URL prefix if configured
+            url_prefix = field_config.get("url_prefix")
+            if url_prefix:
+                values = [f"{url_prefix}{value}" for value in values]
+
             # Handle missing values
             if not values:
                 verbosity = self.config.get("logging", {}).get(
@@ -305,9 +310,22 @@ class XMLExtractor:
                 return records
 
             if not record_elements:
-                logger.warning(
-                    f"No records found with root_xpath '{root_xpath}' in {file_path}"
-                )
+                # Check if this is a deleted OAI record
+                try:
+                    deleted_headers = tree.xpath(
+                        "//oai:header[@status='deleted']",
+                        namespaces={"oai": "http://www.openarchives.org/OAI/2.0/"},
+                    )
+                    if deleted_headers:
+                        logger.info(f"Skipping deleted OAI record in {file_path.name}")
+                    else:
+                        logger.warning(
+                            f"No records found with root_xpath '{root_xpath}' in {file_path}"
+                        )
+                except:
+                    logger.warning(
+                        f"No records found with root_xpath '{root_xpath}' in {file_path}"
+                    )
                 return records
 
             logger.info(f"Found {len(record_elements)} record(s) in {file_path.name}")
@@ -405,10 +423,12 @@ class XMLExtractor:
             and self.stats["missing_fields_by_name"]
         ):
             console.print("\n[yellow]Missing Fields Summary:[/yellow]")
+            logger.info("Missing Fields Summary:")
             for field_name, count in sorted(
                 self.stats["missing_fields_by_name"].items()
             ):
                 console.print(f"  [yellow]• {field_name}: {count} record(s)[/yellow]")
+                logger.info(f"  • {field_name}: {count} record(s)")
 
         # Print statistics
         self._print_statistics()
@@ -483,6 +503,16 @@ class XMLExtractor:
 
         console.print()
         console.print(table)
+
+        # Log statistics
+        logger.info("Extraction Statistics:")
+        logger.info(f"  Files processed: {self.stats['files_processed']}")
+        logger.info(f"  Files skipped: {self.stats['files_skipped']}")
+        logger.info(f"  Records extracted: {self.stats['records_extracted']}")
+        if self.stats["records_filtered"] > 0:
+            logger.info(f"  Records filtered out: {self.stats['records_filtered']}")
+        logger.info(f"  Fields with missing data: {self.stats['fields_missing']}")
+        logger.info(f"  Errors: {len(self.stats['errors'])}")
 
         if self.stats["errors"] and self.debug:
             console.print("\n[red]Errors encountered:[/red]")
