@@ -1,0 +1,23 @@
+[project]
+name = "xml-extractor"
+version = "0.1.0"
+description = "A flexible, configurable Python tool for extracting fields from XML files and converting them to rectangular data formats like CSV or Excel."
+authors = [{ name = "Karl Krägelin", email = "mail@karlkraegelin.de" }]
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "click>=8.3.1",
+    "loguru>=0.7.3",
+    "lxml>=6.0.2",
+    "openpyxl>=3.1.5",
+    "pandas>=2.3.3",
+    "pyarrow>=22.0.0",
+    "pyyaml>=6.0.3",
+    "rich>=14.2.0",
+]
+
+[project.scripts]
+xml_extractor = "xml_extractor:main"
+
+[tool.setuptools]
+py-modules = ["xml_extractor"]
