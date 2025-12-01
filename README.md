@@ -117,6 +117,56 @@ filter:
   pattern: "miami.uni-muenster.de"  # Matches URLs containing this domain
 ```
 
+### Transform
+
+Extract specific parts from text using regex patterns with capture groups:
+
+```yaml
+# Extract date from MARC 008 field and reformat: "180830e20180830||..." → "2018-08-30"
+- column: "Publication_Date"
+  xpath: ".//marcxml:controlfield[@tag='008']/text()"
+  transform:
+    regex: "\\d{6}e(\\d{4})(\\d{2})(\\d{2})"
+    format: "{0}-{1}-{2}"  # Reformat using capture groups
+
+# Extract language code: "...ger||||||" → "ger"
+- column: "Language_Code"
+  xpath: ".//marcxml:controlfield[@tag='008']/text()"
+  transform:
+    regex: "([a-z]{3})\\|{6}$"
+    group: 1
+```
+
+**Transform options:**
+- `regex`: Regular expression pattern (use `\\` for backslashes in YAML)
+- `group`: Which capture group to extract (default: 0 = full match, 1+ = capture groups)
+- `format`: Optional format string to reformat the matched data
+  - Use `{0}`, `{1}`, `{2}` to reference capture groups
+  - Example: `"{0}-{1}-{2}"` converts `20180830` to `2018-08-30`
+
+### URL Prefix
+
+Automatically prepend a URL to extracted values:
+
+```yaml
+- column: "DOI"
+  xpath: ".//datafield[@tag='024']/subfield[@code='a']/text()"
+  url_prefix: "https://doi.org/"  # Converts "10.1234/..." to "https://doi.org/10.1234/..."
+```
+
+### Record Filters
+
+Pre-filter records **before** extraction to only process records matching specific criteria:
+
+```yaml
+# Only extract records from the 1920s with Public Domain licenses
+record_filters:
+  - xpath: ".//mods:dateCreated/text()"
+    condition: "matches"
+    value: "192\\d"
+  
+```
+
 ### Record Filters
 
 Pre-filter records **before** extraction to only process records matching specific criteria:

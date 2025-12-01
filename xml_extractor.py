@@ -104,6 +104,67 @@ class XMLExtractor:
 
         return filtered
 
+    def _apply_transform(
+        self, values: List[str], transform_config: Dict[str, Any]
+    ) -> List[str]:
+        """Apply regex transformation to extract specific parts from values.
+
+        Transform config can have:
+        - regex: Pattern to match and extract (uses groups if present)
+        - group: Which capture group to use (default: 0 = full match)
+        - format: Optional format string to reformat the extracted value
+                  Use {0}, {1}, {2}... to reference capture groups
+        """
+        if not transform_config or not values:
+            return values
+
+        pattern_str = transform_config.get("regex", "")
+        group = transform_config.get("group", 0)
+        format_str = transform_config.get("format")
+
+        if not pattern_str:
+            logger.warning("Transform specified but no regex pattern provided")
+            return values
+
+        try:
+            pattern = re.compile(pattern_str)
+        except re.error as e:
+            logger.error(f"Invalid regex pattern '{pattern_str}': {e}")
+            return values
+
+        transformed = []
+        for value in values:
+            match = pattern.search(value)
+            if match:
+                try:
+                    if format_str:
+                        # Use format string with all capture groups
+                        try:
+                            formatted = format_str.format(*match.groups())
+                            transformed.append(formatted)
+                        except (IndexError, ValueError) as e:
+                            logger.warning(
+                                f"Transform format error: {e}. Pattern: '{pattern_str}', Format: '{format_str}'"
+                            )
+                            # Fall back to specified group
+                            extracted = match.group(group)
+                            if extracted:
+                                transformed.append(extracted)
+                    else:
+                        # Extract specified group
+                        extracted = match.group(group)
+                        if extracted:
+                            transformed.append(extracted)
+                except IndexError:
+                    logger.warning(
+                        f"Transform regex group {group} not found in pattern '{pattern_str}'"
+                    )
+                    # Fall back to full match
+                    if match.group(0):
+                        transformed.append(match.group(0))
+
+        return transformed
+
     def _extract_field(
         self, element: etree._Element, field_config: Dict[str, Any], file_path: str
     ) -> Union[str, List[str]]:
@@ -144,6 +205,11 @@ class XMLExtractor:
             # Apply filter if configured
             if filter_config:
                 values = self._apply_filter(values, filter_config)
+
+            # Apply regex transform if configured
+            transform_config = field_config.get("transform")
+            if transform_config:
+                values = self._apply_transform(values, transform_config)
 
             # Apply URL prefix if configured
             url_prefix = field_config.get("url_prefix")

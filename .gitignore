@@ -11,3 +11,6 @@ wheels/
 
 *_data/
 results
+*.csv
+*.log
+*.xlsx
