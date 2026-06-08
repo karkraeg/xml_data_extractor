@@ -26,3 +26,8 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
 py-modules = ["xml_extractor", "xml_config_builder"]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.3",
+]
