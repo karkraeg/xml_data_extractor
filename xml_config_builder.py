@@ -219,7 +219,7 @@ class ColumnDialog(ModalScreen):
             yield Label("XPath:", id="xpath-label")
             yield Static(self.xpath, id="xpath-value")
             yield Input(value=self.suggested, placeholder="Column name", id="col-input")
-            yield Label("Separator (for multiple values):", id="xpath-label")
+            yield Label("Separator (for multiple values):", id="sep-label")
             yield Input(value=" | ", placeholder="e.g.  |  or ,", id="sep-input")
             with Horizontal(id="btn-row"):
                 yield Button("Add", variant="primary", id="btn-add")
