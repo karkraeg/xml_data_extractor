@@ -14,10 +14,15 @@ dependencies = [
     "pyarrow>=22.0.0",
     "pyyaml>=6.0.3",
     "rich>=14.2.0",
+    "textual>=8.2.7",
 ]
 
 [project.scripts]
-xml_extractor = "xml_extractor:main"
+xml-extractor = "xml_extractor:cli"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-py-modules = ["xml_extractor"]
+py-modules = ["xml_extractor", "xml_config_builder"]

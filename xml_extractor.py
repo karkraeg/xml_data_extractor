@@ -608,7 +608,13 @@ def load_config(config_file: Path) -> Dict[str, Any]:
     return config
 
 
-@click.command()
+@click.group()
+def cli():
+    """XML Field Extractor — extract XML data or build configs interactively."""
+    pass
+
+
+@cli.command("run")
 @click.argument(
     "config",
     type=click.Path(exists=True, path_type=Path),
@@ -641,24 +647,18 @@ def load_config(config_file: Path) -> Dict[str, Any]:
     default=False,
     help="Enable debug mode with verbose logging",
 )
-def main(
+def run_cmd(
     config: Path,
     input_dir: Optional[Path],
     output_file: Optional[Path],
     output_format: str,
     debug: bool,
 ):
+    """Extract fields from XML files using CONFIG yaml file.
+
+    Supports Dublin Core, METS, LIDO, PREMIS, and other XML formats.
+    Output formats: CSV, Parquet (native list support), Excel, JSON.
     """
-    XML Field Extractor - Extract fields from XML files to CSV/Parquet/Excel/JSON
-
-    CONFIG: Path to configuration YAML file (required)
-
-    Supports complex XML formats (Dublin Core, METS, LIDO, PREMIS, etc.)
-    with flexible XPath-based field extraction and filtering.
-
-    Output formats: CSV, Parquet (with native list support), Excel, JSON
-    """
-    # Print banner
     console.print()
     console.print("[bold cyan]═══════════════════════════════════════[/bold cyan]")
     console.print("[bold cyan]   XML Field Extractor[/bold cyan]")
@@ -666,20 +666,16 @@ def main(
     console.print()
 
     try:
-        # Load configuration
         console.print(f"[cyan]Loading configuration from {config}...[/cyan]")
         cfg = load_config(config)
 
-        # Override with command-line arguments
         if input_dir:
             cfg["input_directory"] = str(input_dir)
         if output_file:
             cfg["output_file"] = str(output_file)
 
-        # Get output path and add extension based on format
         output_base = Path(cfg.get("output_file", "output"))
 
-        # Map format to file extension
         format_extensions = {
             "csv": ".csv",
             "parquet": ".parquet",
@@ -687,27 +683,20 @@ def main(
             "json": ".json",
         }
 
-        # Add extension if not present
         extension = format_extensions.get(output_format, ".csv")
         if output_base.suffix not in format_extensions.values():
             output_path = output_base.with_suffix(extension)
         else:
             output_path = output_base
 
-        # Setup logging - always create log file next to output file
         log_path = output_path.parent / f"{output_path.stem}.log"
 
-        # Remove default logger
         logger.remove()
-
-        # Add console logger (only warnings and errors if not debug)
         logger.add(
             lambda msg: console.print(msg, end=""),
             level="DEBUG" if debug else "WARNING",
             format="<level>{message}</level>",
         )
-
-        # Add file logger
         logger.add(
             log_path,
             level="DEBUG",
@@ -720,7 +709,6 @@ def main(
         logger.info(f"Configuration: {config}")
         logger.info(f"Debug mode: {debug}")
 
-        # Get input/output paths
         input_path = Path(cfg.get("input_directory", "./example_data"))
 
         if not input_path.exists():
@@ -733,7 +721,6 @@ def main(
         console.print(f"[cyan]Log file: {log_path}[/cyan]")
         console.print()
 
-        # Create extractor and run
         extractor = XMLExtractor(cfg, debug=debug)
         extractor.extract(input_path, output_path, output_format)
 
@@ -746,5 +733,46 @@ def main(
         raise click.Abort()
 
 
+@cli.command("build")
+@click.argument(
+    "xml_file",
+    type=click.Path(exists=True, path_type=Path),
+)
+def build_cmd(xml_file: Path) -> None:
+    """Interactively build a config YAML from an XML sample file."""
+    from xml_config_builder import ConfigBuilderApp
+
+    app = ConfigBuilderApp(xml_file)
+    config_path = app.run()
+
+    if config_path:
+        console.print(f"\n[cyan]Running extraction with {config_path} …[/cyan]\n")
+        cfg = load_config(config_path)
+        output_base = Path(cfg.get("output_file", config_path.stem))
+        output_path = output_base.with_suffix(".csv")
+        log_path = output_path.parent / f"{output_path.stem}.log"
+
+        logger.remove()
+        logger.add(
+            lambda msg: console.print(msg, end=""),
+            level="WARNING",
+            format="<level>{message}</level>",
+        )
+        logger.add(
+            log_path,
+            level="DEBUG",
+            format="{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {message}",
+            rotation="10 MB",
+        )
+
+        input_path = Path(cfg.get("input_directory", xml_file.parent))
+        extractor = XMLExtractor(cfg)
+        extractor.extract(input_path, output_path, "csv")
+        console.print("\n[green]✓ Extraction completed![/green]")
+
+
+# keep bare `main` so `if __name__ == "__main__"` still works
+main = cli
+
 if __name__ == "__main__":
-    main()
+    cli()
