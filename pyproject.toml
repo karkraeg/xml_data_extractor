@@ -1,5 +1,5 @@
 [project]
-name = "xml-extractor"
+name = "xml-data-extractor"
 version = "0.1.0"
 description = "A flexible, configurable Python tool for extracting fields from XML files and converting them to rectangular data formats like CSV or Excel."
 authors = [{ name = "Karl Krägelin", email = "mail@karlkraegelin.de" }]

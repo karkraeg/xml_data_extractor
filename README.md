@@ -2,6 +2,24 @@
 
 A flexible, configurable Python tool for extracting fields from XML files and converting them to rectangular data formats like CSV or Excel. Designed to handle complex XML formats like **METS**, **LIDO**, **PREMIS**, and more.
 
+## Interactive Config Builder
+
+`xml-data-extractor` ships with a terminal UI for building configs interactively — no YAML editing needed.
+
+```bash
+xml-extractor build example.xml
+```
+
+**Phase 1 — Select root element:** Navigate the XML tree, pick the element that represents one record.
+
+![Phase 1: select root element](assets/screenshot_phase1.png)
+
+**Phase 2 — Map fields:** Navigate to any node, press Enter to map it as a column. Auto-generates XPath.
+
+![Phase 2: map fields](assets/screenshot_phase2.png)
+
+The builder saves a ready-to-use `config.yaml` and can immediately run the extraction.
+
 ## Disclaimer
 
 🚨 This project was completely developed with the assistance of GitHub Copilot.
